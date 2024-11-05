@@ -22,7 +22,7 @@ const SignIn: React.FC = () => {
       });
 
       if (response.data && response.data.data.accessToken) {
-        localStorage.setItem("accessToken", response.data.accessToken);
+        localStorage.setItem("accessToken", response.data.data.accessToken);
 
         navigate("/");
       } else {

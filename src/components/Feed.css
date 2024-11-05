@@ -1,0 +1,21 @@
+.feed-container {
+  padding: 20px;
+}
+
+.feed-header {
+  display: grid;
+  grid-template-columns: 120px 100px 200px 200px 200px;
+  font-weight: bold;
+  border-bottom: 2px solid #ccc;
+  margin-bottom: 10px;
+}
+
+.feed-cell {
+  padding: 10px;
+  text-align: center;
+}
+.feed-row {
+  display: grid;
+  grid-template-columns: 120px 100px 230px 300px 100px;
+  border-bottom: 1px solid #eee;
+}

@@ -30,6 +30,7 @@ const SignUp: React.FC = () => {
       });
 
       if (response.status === 201) {
+        localStorage.setItem("accessToken", response.data.data.accessToken);
         navigate("/");
       } else {
         setError("Sign-up failed. Please try again.");
