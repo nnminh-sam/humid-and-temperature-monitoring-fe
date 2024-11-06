@@ -1,8 +1,9 @@
 // Feed.tsx
 import React, { useEffect, useState } from "react";
-import { List, Typography, Spin, Pagination } from "antd";
+import { List, Typography, Spin } from "antd";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
+import { io, Socket } from "socket.io-client";
 import "./Feed.css";
 
 interface Channel {
@@ -34,11 +35,19 @@ const Feed: React.FC = () => {
   });
   const [feeds, setFeeds] = useState<Feed[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [currentPage, setCurrentPage] = useState<number>(1);
-  const [pageSize] = useState<number>(10);
-  const [totalFeeds, setTotalFeeds] = useState<number>(0);
   const navigate = useNavigate();
   const apiHost = import.meta.env.VITE_API_HOST;
+  const socketUrl = import.meta.env.VITE_API_HOST;
+  const socket: Socket = io(socketUrl);
+
+  useEffect(() => {
+    socket.emit("joinRoom", { channelId });
+  }, [socketUrl, channelId]);
+
+  socket.on("newFeed", (newFeed: Feed) => {
+    console.log("New feed received:", newFeed);
+    setFeeds((prevFeeds) => [newFeed, ...prevFeeds]);
+  });
 
   useEffect(() => {
     const fetchFeeds = async () => {
@@ -57,21 +66,13 @@ const Feed: React.FC = () => {
         setChannel(channelResponse.data.data);
 
         const response = await axios.get(
-          `${apiHost}/api/v1/feeds?channelId=${channelId}&page=${currentPage}&size=${pageSize}`,
+          `${apiHost}/api/v1/feeds?channelId=${channelId}`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }
         );
 
-        // Sort feeds by createdAt in descending order
-        const sortedFeeds = response.data.data.sort((a: Feed, b: Feed) => {
-          return (
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-          );
-        });
-
-        setFeeds(sortedFeeds);
-        setTotalFeeds(response.data.metadata.pagination.totalDocuments);
+        setFeeds(response.data.data.reverse());
       } catch (error) {
         console.error("Error fetching feeds:", error);
         navigate("/sign-in");
@@ -81,11 +82,7 @@ const Feed: React.FC = () => {
     };
 
     fetchFeeds();
-  }, [apiHost, channelId, currentPage, navigate, pageSize]);
-
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-  };
+  }, [apiHost, channelId, navigate]);
 
   if (loading) {
     return <Spin tip="Loading feed data..." />;
@@ -93,36 +90,34 @@ const Feed: React.FC = () => {
 
   return (
     <div className="feed-container">
-      <Typography.Title level={3}>Channel: {channel.name}</Typography.Title>
-      <div className="feed-header">
-        <div className="feed-cell">Temperature</div>
-        <div className="feed-cell">Humidity</div>
-        <div className="feed-cell">Temperature Threshold</div>
-        <div className="feed-cell">Humidity Threshold</div>
-        <div className="feed-cell">Created At</div>
+      <div className="feed-header-fixed">
+        <Typography.Title level={3}>Channel: {channel.name}</Typography.Title>
+        <div className="feed-header">
+          <div className="feed-cell">Temperature</div>
+          <div className="feed-cell">Humidity</div>
+          <div className="feed-cell">Temperature Threshold</div>
+          <div className="feed-cell">Humidity Threshold</div>
+          <div className="feed-cell">Created At</div>
+        </div>
       </div>
-      <List
-        itemLayout="horizontal"
-        dataSource={feeds}
-        renderItem={(feed) => (
-          <List.Item className="feed-row">
-            <div className="feed-cell">{feed.temperature}</div>
-            <div className="feed-cell">{feed.humidity}</div>
-            <div className="feed-cell">{feed.temperatureThreshold}</div>
-            <div className="feed-cell">{feed.humidityThreshold}</div>
-            <div className="feed-cell">
-              {new Date(feed.createdAt).toLocaleString()}
-            </div>
-          </List.Item>
-        )}
-      />
-      <Pagination
-        current={currentPage}
-        pageSize={pageSize}
-        onChange={handlePageChange}
-        total={totalFeeds}
-        style={{ marginTop: "20px", textAlign: "center" }}
-      />
+      <div className="list-container">
+        <List
+          className="feed-list"
+          itemLayout="horizontal"
+          dataSource={feeds}
+          renderItem={(feed) => (
+            <List.Item className="feed-row">
+              <div className="feed-cell">{feed.temperature}</div>
+              <div className="feed-cell">{feed.humidity}</div>
+              <div className="feed-cell">{feed.temperatureThreshold}</div>
+              <div className="feed-cell">{feed.humidityThreshold}</div>
+              <div className="feed-cell">
+                {new Date(feed.createdAt).toLocaleString()}
+              </div>
+            </List.Item>
+          )}
+        />
+      </div>
     </div>
   );
 };

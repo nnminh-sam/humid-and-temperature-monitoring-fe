@@ -1,19 +1,37 @@
 .feed-container {
   padding: 20px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.feed-header-fixed {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  border-bottom: 2px solid #ccc;
+  padding: 0;
+}
+
+.list-container {
+  margin-top: 10px;
+  max-height: 800px;
+  overflow-y: auto;
+  padding: 10px;
 }
 
 .feed-header {
   display: grid;
-  grid-template-columns: 120px 100px 200px 200px 200px;
+  grid-template-columns: 120px 170px 200px 200px 200px;
   font-weight: bold;
-  border-bottom: 2px solid #ccc;
-  margin-bottom: 10px;
+  background-color: #eee;
 }
 
 .feed-cell {
   padding: 10px;
   text-align: center;
 }
+
 .feed-row {
   display: grid;
   grid-template-columns: 120px 100px 230px 300px 100px;
