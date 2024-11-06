@@ -1,10 +1,15 @@
 // Feed.tsx
 import React, { useEffect, useState } from "react";
-import { List, Typography, Spin } from "antd";
+import { List, Typography, Spin, Button } from "antd";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { io, Socket } from "socket.io-client";
 import "./Feed.css";
+
+interface User {
+  email: string;
+  fullName: string;
+}
 
 interface Channel {
   id: string;
@@ -12,6 +17,9 @@ interface Channel {
   description: string;
   createdAt: string;
   updatedAt: string;
+  writeKey: string;
+  readKey: string;
+  user: User;
 }
 
 interface Feed {
@@ -32,7 +40,11 @@ const Feed: React.FC = () => {
     description: "",
     createdAt: "",
     updatedAt: "",
+    writeKey: "",
+    readKey: "",
+    user: { email: "", fullName: "" },
   });
+  const [keys, setKeys] = useState<Record<string, string>>({});
   const [feeds, setFeeds] = useState<Feed[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const navigate = useNavigate();
@@ -64,6 +76,10 @@ const Feed: React.FC = () => {
           }
         );
         setChannel(channelResponse.data.data);
+        setKeys({
+          writeKey: channelResponse.data.data.writeKey,
+          readKey: channelResponse.data.data.readKey,
+        });
 
         const response = await axios.get(
           `${apiHost}/api/v1/feeds?channelId=${channelId}`,
@@ -88,16 +104,39 @@ const Feed: React.FC = () => {
     return <Spin tip="Loading feed data..." />;
   }
 
+  const generateNewKeyHandler = async () => {
+    try {
+      const generateNewKeys = await axios.get(
+        `${apiHost}/api/v1/channels/${channelId}/keys?email=${channel.user.email}`
+      );
+      setKeys({
+        writeKey: generateNewKeys.data.data.writeKey,
+        readKey: generateNewKeys.data.data.readKey,
+      });
+    } catch (error) {
+      console.error("Error fetching feeds:", error);
+      alert("Error generating new keys");
+    }
+  };
+
   return (
     <div className="feed-container">
       <div className="feed-header-fixed">
         <Typography.Title level={3}>Channel: {channel.name}</Typography.Title>
+        <p>
+          <strong>Write key:</strong> {keys.writeKey}
+        </p>
+        <p>
+          <strong>Read key:</strong> {keys.readKey}
+        </p>
+        <Button onClick={generateNewKeyHandler}>Generate new keys</Button>
+        <p></p>
         <div className="feed-header">
           <div className="feed-cell">Temperature</div>
           <div className="feed-cell">Humidity</div>
           <div className="feed-cell">Temperature Threshold</div>
           <div className="feed-cell">Humidity Threshold</div>
-          <div className="feed-cell">Created At</div>
+          <div className="feed-cell">Timestamp</div>
         </div>
       </div>
       <div className="list-container">
