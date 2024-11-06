@@ -1,6 +1,5 @@
-// Feed.tsx
 import React, { useEffect, useState } from "react";
-import { List, Typography, Spin, Button } from "antd";
+import { List, Typography, Spin, Button, Input } from "antd";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { io, Socket } from "socket.io-client";
@@ -47,6 +46,12 @@ const Feed: React.FC = () => {
   const [keys, setKeys] = useState<Record<string, string>>({});
   const [feeds, setFeeds] = useState<Feed[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [temperatureThreshold, setTemperatureThreshold] = useState<
+    number | undefined
+  >();
+  const [humidityThreshold, setHumidityThreshold] = useState<
+    number | undefined
+  >();
   const navigate = useNavigate();
   const apiHost = import.meta.env.VITE_API_HOST;
   const socketUrl = import.meta.env.VITE_API_HOST;
@@ -100,10 +105,6 @@ const Feed: React.FC = () => {
     fetchFeeds();
   }, [apiHost, channelId, navigate]);
 
-  if (loading) {
-    return <Spin tip="Loading feed data..." />;
-  }
-
   const generateNewKeyHandler = async () => {
     try {
       const generateNewKeys = await axios.get(
@@ -119,6 +120,41 @@ const Feed: React.FC = () => {
     }
   };
 
+  const handleThresholdUpdate = async () => {
+    try {
+      const token = localStorage.getItem("accessToken");
+      if (!token) {
+        throw new Error("User is not authenticated");
+      }
+
+      if (!temperatureThreshold || !humidityThreshold) {
+        alert("Please enter both temperature and humidity thresholds");
+        return;
+      }
+
+      await axios.post(
+        `${apiHost}/api/v1/feeds`,
+        {
+          channelId: channel.id,
+          temperature: feeds[0].temperature,
+          humidity: feeds[0].humidity,
+          temperatureThreshold,
+          humidityThreshold,
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+    } catch (error) {
+      console.error("Error updating thresholds:", error);
+      alert("Error updating thresholds");
+    }
+  };
+
+  if (loading) {
+    return <Spin tip="Loading feed data..." />;
+  }
+
   return (
     <div className="feed-container">
       <div className="feed-header-fixed">
@@ -130,6 +166,24 @@ const Feed: React.FC = () => {
           <strong>Read key:</strong> {keys.readKey}
         </p>
         <Button onClick={generateNewKeyHandler}>Generate new keys</Button>
+        <p></p>
+        <div className="threshold-update-container">
+          <input
+            type="number"
+            value={temperatureThreshold}
+            onChange={(e) => setTemperatureThreshold(Number(e.target.value))}
+            className="threshold-input"
+            placeholder="Temperature Threshold"
+          />
+          <input
+            type="number"
+            value={humidityThreshold}
+            onChange={(e) => setHumidityThreshold(Number(e.target.value))}
+            className="threshold-input"
+            placeholder="Humidity Threshold"
+          />
+          <Button onClick={handleThresholdUpdate}>Update Thresholds</Button>
+        </div>
         <p></p>
         <div className="feed-header">
           <div className="feed-cell">Temperature</div>
