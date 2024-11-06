@@ -158,7 +158,9 @@ const Feed: React.FC = () => {
   return (
     <div className="feed-container">
       <div className="feed-header-fixed">
-        <Typography.Title level={3}>Channel: {channel.name}</Typography.Title>
+        <Typography.Title level={3}>
+          Channel: {channel.name} | {channel.id}
+        </Typography.Title>
         <p>
           <strong>Write key:</strong> {keys.writeKey}
         </p>
